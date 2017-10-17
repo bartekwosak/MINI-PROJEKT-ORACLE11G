@@ -1,0 +1,162 @@
+1. Temat projektu: Hurtownia artykułów spożywczych
+
+2. Dane zespołu: Osak Bartłomiej,Pasternak Tomasz, grupa: 2ID15B, laboratorium 'bazy danych 1'
+
+3. WAŻNE INFORMACJE: 
+	Do poprawnego działania procedur wymagane jest włączenie obsługi serwera wyjściowego przed wykonaniem wywołania EXECUTE:
+	SET SERVEROUTPUT ON
+
+	Ponadto do poprawnego działania bazy zalecane jest użycie skryptów w następującej kolejności:
+	- drop.sql - opcjonalnie
+	- create.sql
+	- insert.sql
+	- procedury.sql
+	- wyzwalacze.sql
+	Po poprawnym wykonaniu wywołań można przystąpić do pracy na bazie. 
+
+4. Struktura projektu:
+	Plik create.sql - zawiera wywołania CREATE tworzące tabele i sekwencje używane w projekcie
+	Plik insert.sql - zawiera wywołania INSERT wypełniające tabele. Zawiera również wywołania CREATE tworzące widoki.
+	Plik drop.sql - zawiera wywołania DROP usuwające składniki bazy
+	Plik procedury.sql - zawiera definicje procedur używanych w projekcie
+	Plik wyzwalacze.sql - zawiera definicje wyzwalaczy używanych w projekcie
+	Plik wywolania.sql - zawiera wywołania procedur, wyświetlanie widoków oraz przykładowe wywołania wyzwalaczy.  
+
+5. Struktura bazy
+	5.1. Tabele
+		DANE_FAKTURY - zawiera dane faktur (ID danych o fakturach, numer faktury i produkty na niej)
+		DANE_PRACOWNIKA - zawiera dane pracowników (ID pracownika, ID samochodu, data zatrudnienia, stanowisko, numer umowy i pensję)
+		FAKTURA - zawiera dane pojedynczej faktury (ID faktury, numer, datę wystawienia, ID klienta, ID pracownika wystawiającego, cenę netto, cenę brutto i kwotę vat - ceny i vat do policzenia wywołaniem procedury)
+		FAKTURA_LOG - zawiera log zmian wprowadzanych do numeru faktury w tabeli FAKTURA. Przechowuje datę zmiany, nazwę użytkownika wprowadzającego zmianę, stary numer faktury oraz nowy numer faktury.
+		KLIENT - zawiera dane o klientach (ID klienta, nazwę, NIP, ulicę, nr mieszkania, nr lokalu, kod pocztowy, pocztę oraz nr telefonu)
+		KLIENT_LOG - zawiera log zmian wprowadzanych do nazwy klienta i NIPu w tabeli KLIENT. Przechowuje datę zmiany, nazwę użytkownika wprowadzającego zmianę, stare nazwy i NIP oraz nowe nazwy i NIPy.
+		PRACOWNIK - zawiera główne dane o pracownikach: ID pracownika, imię, nazwisko, ulicę, nr mieszkania, nr lokalu, kod pocztowy, pocztę oraz numer telefonu
+		PRODUCENT - zawiera dane o producentach: ID producenta, nazwę, NIP, ulicę, nr budynku, nr lokalu, kod pocztowy i pocztę
+		PRODUKT - zawiera powiązanie pomiędzy produktami z poszczególnych tabel a ich cenami. Zawiera ID produktu, jego cenę netto, cenę brutto i wartość VAT.
+		SAMOCHOD - zawiera dane o samochodach dostępnych w firmie: ID samochodu, markę, model, rok produkcji, nr rejestracyjny oraz numer polisy
+		SAMOCHOD_LOG - zawiera log zmian wprowadzanych do marki, modelu, roku produkcji, numeru rejestracji oraz polisy w tabeli SAMOCHOD. Przechowuje datę zmiany, nazwę użytkownika wprowadzającego zmianę, stare dane oraz nowe dane samochodu.
+		ART_SYPKIE,PRZYPRAWY,OLEJE,PRZETWORY_SOSY,MAKARONY,ART_MLECZNE,SLODYCZE,NAPOJE,HERBATY_KAWY - zawierają dane o produktach dostępnych w hurtowni: ID produktu, ID producenta Nazwa oraz stan magazynowy (1 - dostępny, 0 - niedostępny)
+
+	5.2. Sekwencje
+		DANE_FAKTURY_SEQ - sekwencja ID danych faktury. Początkowa wartość: 5000. Inkrementacja o 1.
+		DANE_PRACOWNIKA_SEQ - sekwencja ID danych pracowników. Początkowa wartość: 1. Inkrementacja o 1.
+		FAKTURA_LOG_SEQ - sekwencja ID logów zmian w tabeli FAKTURA. Początkowa wartość: 1. Inkrementacja o 1.
+		FAKTURA_SEQ - sekwencja ID faktur. Początkowa wartość: 6000. Inkrementacja o 1.
+		KLIENT_LOG_SEQ - sekwencja ID logów zmian w tabeli KLIENT. Początkowa wartosć: 1. Inkrementacja o 1.
+		KLIENT_SEQ - sekwencja ID klientów. Początkowa wartość: 4000. Inkrementacja o 1.
+		NR_UMOWY_SEQ - zawiera ID umowy (numer umowy). Początkowa wartość: 8000. Inkrementacja o 1.
+		PRACOWNIK_SEQ - zawiera ID pracownika. Początkowa wartość: 3000. Inkrementacja o 1.
+		PRODUCENT_SEQ - sekwencja ID producentów. Początkowa wartość: 2000. Inkrementacja o 1.
+		PRODUKT_SEQ - sekwencja ID produktów. Początkowa wartość: 1000. Inkrementacja o 1.
+		SAMOCHOD_LOG_SEQ - sekwencja ID logów zmian w tabeli SAMOCHOD. Początkowa wartość: 1. Inkrementacja o 1.
+		SAMOCHOD_SEQ - sekwencja ID samochodów. Początkowa wartość: 7000. Inkrementacja o 1.
+
+6. Widoki
+	6.1. Widok WARTOSCI_FAKTUR
+		Łączy w sobie dane o fakturach. Wyświetla: ID faktury, numer faktury, datę wystawienia faktury, ilość produktów na fakturze, cenę netto, VAT oraz cenę brutto. Wyświetlenie VATu i ceny brutto wymaga wywołania procedury LICZ_WARTOSC_FAKTURY (opisana poniżej).
+		Przykładowe zapytanie do widoku: SELECT * FROM WARTOSCI_FAKTUR;
+
+	6.2. Widok KLIENT_FAKTURA
+		Zawiera w sobie dane o fakturach i klientach. Wyświetla ilość faktur wystawionych dla danego klienta oraz jego NIP.
+		Przykładowe zapytanie do widoku: SELECT * FROM KLIENT_FAKTURA;
+
+	6.3. Widok SAMOCHOD_PRACOWNIK
+		Zawiera podstawowe dane o pracowniku i jego samochodzie. Wyświetla numer pracownika, imię, nazwisko, stanowisko oraz numer samochodu, markę i model. Wyświetla (null) jeśli pracownik nie ma służbowego samochodu.
+		Przykładowe zapytanie do widoku: SELECT * FROM SAMOCHOD_PRACOWNIK;
+
+7. Procedury 
+	7.1. Procedura DODAJ_DANE_FAKTURY
+		Procedura jest używana do wypełniania tabeli DANE_FAKTURY losowymi danymi w skrypcie insert.sql. Teoretycznie niedostępna dla użytkownika bazy. 
+
+	7.2. Procedura LICZ_BRUTTO_NA_FAKTURZE
+		Procedura uzupełniająca dane faktury o ID podanym w parametrze. Wyznacza wartość netto na podstawie ceny produktów na niej umieszczonych, wartość brutto na podstawie wartości brutto i VATu 23% oraz wartość VATu na podstawie różnicy wartości brutto i netto. Wypisuje wyniki do konsoli DBMS oraz wstawia do tabeli FAKTURA oraz automatycznie do widoku WARTOSCI_FAKTUR. 
+		Przykładowe wywołanie: EXECUTE LICZ_WARTOSC_FAKTURY('&PODAJ_ID_FAKTURY'); dla parametru 6000.
+
+	7.3. Procedura PODLICZENIE_OKRESOWE
+		Procedura wyliczająca zarobek netto, zarobek brutto, wartość VATu oraz ilość sprzedanego towaru w okresie podanym w parametrze. Jako parametry przyjmuje daty w formacie YYYY/MM/DD. Wypisuje wyniki do konsoli DBMS. 
+		Przykładowe wywołanie: EXECUTE PODLICZENIE_OKRESOWE('&DATA1','&DATA2'); dla parametrów: 2016/01/01, 2016/12/31.
+
+	7.4. Procedura PODWYZKA_PRACOWNIKOW (z kursorem KURSOR1)
+		Procedura dodająca kwotę podwyżki (z parametru) do pensji pracownika na danym stanowisku podanym w parametrze. Wykorzystuje kursor. Aktualizuje dane w tabeli DANE_PRACOWNIKA.
+		Przykładowe wywołanie: EXECUTE PODWYZKA_PRACOWNIKOW(&KWOTA_PODWYZKI,'&STANOWISKO_PRACOWNIKA'); dla parametrów: 2000, PREZES.
+
+	7.5. Procedura OBLICZANIE_BRUTTO_VAT (z kursorami: KURSOR1, KURSOR2)
+		Procedura obliczająca cenę brutto i wartość VAT w tabeli PRODUKT za pomocą kursorów na podstawie ceny netto podanej w tabeli.
+		Aktualizuje dane w tabeli PRODUKT. 
+		Wywołanie: EXECUTE OBLICZANIE_BRUTTO_VAT; (bez parametrów).
+
+	7.6. Procedura ZMIANA_CEN_TOWAROW (z kursorami: KURSOR1, KURSOR2)
+		Procedura zmieniająca cenę towaru w zależności od parametrów. Przyjmuje następująco: numer opcji (1 - podwyżka, 2 - obniżka, jeśli inny zwraca błąd: ORA-20001: WYBIERZ OPCJE Z ZAKRESU 1-2!), kwotę podwyżki/obniżki, ID produktu. Aktualizuje dane w tabeli PRODUKT.
+		Przykładowe wywołanie: EXECUTE ZMIANA_CEN_TOWAROW(&NR_OPCJI,&KWOTA_PODWYZKI_OBNIZKI,&ID_PRODUKTU); dla parametrów: 1, 50, 1001.  
+
+8. Wyzwalacze
+	8.1. Wyzwalacz zmian w danych faktur LOGI_FAKTURA
+		Wyzwalacz aktywowany w momencie wprowadzenia zmian w numerze faktury w istniejącym rekordzie w tabeli FAKTURA. Wprowadza do tabeli FAKTURA_LOG: ID zmiany, datę dokonania zmiany, nazwę użytkownika wprowadzającego zmianę oraz stare i nowe wartości w tabeli FAKTURA. 
+		Przykładowe użycie wywołania UPDATE: UPDATE FAKTURA SET NUMER = '99/2016' WHERE FAKTURA.ID=6019;
+
+	8.2. Wyzwalacz zmian w danych samochodów LOGI_SAMOCHOD
+		Wyzwalacz aktywowany w momencie wprowadzania zmian w marce, modelu, roku produkcji, numerze rejestracyjnym lub polisie w istniejącym rekordzie w tabeli SAMOCHOD. Wprowadza w tabeli SAMOCHOD_LOG: ID zmiany, datę dokonania zmiany, nazwę użytkownika wprowadzającego zmianę oraz stare i nowe wartości w tabeli SAMOCHOD.
+		Przykładowe użycie wywołania UPDATE: UPDATE SAMOCHOD SET MARKA = 'POLONEZ' WHERE SAMOCHOD.ID=7006;
+
+	8.3. Wyzwalacz zmian w danych klientów LOGI_KLIENT
+		Wyzwalacz aktywowany w momencie wprowadzenia zmian w nazwie lub NIPie klienta w istniejącym rekordzie w tabeli KLIENT. Wprowadza do tabeli KLIENT_LOG: ID zmiany, datę dokonania zmiany, nazwę użytkownika wprowadzającego zmianę oraz stare i nowe wartości w tabeli KLIENT.
+		Przykładowe użycie wywołania UPDATE: UPDATE KLIENT SET NAZWA = 'CENTERMED' WHERE KLIENT.ID=4010;
+
+9. Interfejs użytkownika
+	Interfejs konsolowy został stworzony na podstawie materiałów dr inż. Bedli. Domyślnie klient loguje się na konto użytkownika HR (login HR, hasło HR) do bazy localhost. Logowanie następuje w skrypcie .bat:
+	cd sql
+	sqlplus HR/HR@localhost/XE @main.sql
+	cd ..
+	pause
+	cls
+	HR/HR@localhost/XE - zapis można modyfikować!
+
+	9.1. Menu wyboru i opis opcji 
+		1. CREATE TABLES - tworzy tabele
+		2. CREATE SEQUENCES - tworzy sekwencje
+		3. INSERT INTO TABLES - uzupełnia tabele
+		4. CREATE VIEW - tworzy widoki
+		5. CREATE PROCEDURES - tworzy procedury
+		6. CREATE TRIGGERS - tworzy wyzwalacze
+		7. DROP TABLE - usuwa tabele
+		8. DROP SEQUENCES - usuwa sekwencje
+		9. DROP PROCEDURES - usuwa procedury
+		A. DROP VIEW - usuwa widoki
+		B. DROP TRIGGERS - usuwa wyzwalacze
+		C. EXECUTE PROCEDURE - podmenu procedur (opisane poniżej)
+		D. SELECT FROM VIEW - podmenu widoków (opisane poniżej)
+		E. SELECT FROM TABLE_LOG - podmenu logów wyzwalaczy (opisane poniżej)
+		F. DOWOLNA INSTRUKCJA - możliwość wprowadzenia własnego zapytania do bazy
+		0. KONIEC - rozłączenie z bazą i zamknięcie programu
+
+	9.2. Podmenu procedur, widoków i wyzwalaczy
+		W podmenu C. EXECUTE PROCEDURE można wywoływać procedury zdefiniowane w skryptach i opisane w punkcie 7.
+		W podmenu D. SELECT FROM VIEW można wywoływać zdefiniowane podzapytania widoków (wyświetlanie ich zawartości) opisanych w punkcie 6.
+		W podmenu E. SELECT FROM TABLE_LOG można wyświetlać zawartość tabeli przechowujących logi zmian w bazie.
+
+	9.3. Sugerowana kolejność wykonywania poleceń:
+		- pozbycie się wszystkich tabel i innych komponentów bazy:
+			7. DROP TABLE
+			8. DROP SEQUENCES
+			9. DROP PROCEDURES
+			A. DROP VIEW
+			B. DROP TRIGGERS
+		- stworzenie tabel i sekwencji:
+			1. CREATE TABLES
+			2. CREATE SEQUENCES	
+		- wypełnienie tabel:
+			3. INSERT INTO TABLES
+		- stworzenie widoków, procedur i wyzwalaczy:
+			4. CREATE VIEW
+			5. CREATE PROCEDURES
+			6. CREATE TRIGGERS
+		- praca na bazie danych:
+			C. EXECUTE PROCEDURE
+			D. SELECT FROM VIEW
+			E. SELECT FROM TABLE_LOG
+			F. DOWOLNA INSTRUKCJA
+
+		Należy pamiętać, że SQL*Plus obsługuje do 20 instrukcji obliczeniowych na jednym uruchomieniu bazy. Po przekroczeniu tej ilości, przy próbie wywołania zapytania będzie zwracany błąd: SQL*Plus command procedures may only be nested to a depth of 20. W takim przypadku należy ponownie uruchomić klienta i postępować zgodnie z zalecaną kolejnością kroków. 
+	
+Opracowano dn. 27.01.2016
+Bartłomiej Osak
